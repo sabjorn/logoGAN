@@ -68,6 +68,15 @@ class DataGenerator:
                 os.remove(os.path.join(path, f))
 
     @staticmethod
+    def create_filelist(path, filetypes = [".jpg", ".jpeg"]):
+        all_files = os.listdir(path)
+        filtered_files = set()
+        for filetype in filetypes:
+            filtered = filter(lambda x: x.endswith(filetype), all_files)
+            filtered_files.update(filtered)
+        return filtered_files
+
+    @staticmethod
     def expand2square(pil_img, background_color):
         width, height = pil_img.size
         if width == height:
