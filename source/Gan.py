@@ -14,13 +14,11 @@ from DataGenerator import DataGenerator
 
 
 class Gan:
-    def __init__(self, datasetPath="../dataset/train", imgDims=(128, 128, 1), batchSize=16, noiseDims=100, train=True):
-        self.datasetPath = datasetPath
-        if train:
-            self.dataGenerator = DataGenerator(imgDims, datasetPath)
-        self.numFiles = len(os.listdir(datasetPath))
+    def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, noiseDims=100):
+        if data_generator:
+            self.data_generator = data_generator
         self.batchSize = batchSize
-        self.stepsPerEpoch = int(self.numFiles / self.batchSize)
+        self.stepsPerEpoch = int(len(self.data_generator) / self.batchSize)
 
         self.noiseDim = noiseDims
         self.imgDims = imgDims
@@ -89,11 +87,12 @@ class Gan:
         self.discriminator.save(os.path.join(self.modelSavePath, f"discriminator_at_epoch{epoch}.h5"))
 
     def save_random_images(self, epoch, num_samples, imageSavePath):
-        seed = random.normal([num_samples, self.noiseDim])
-
-        for i in range(num_samples):
-            file_path = os.path.join(imageSavePath, f'image_at_epoch_{epoch}_#{i}.png')
-            image = self.generate_image(seed[i])
+        # seed = random.normal([num_samples, self.noiseDim])
+        noise = np.random.normal(-1, 1, (num_samples, self.noiseDim))
+        prediction = self.generator.predict(noise)
+        for i, pred in enumerate(prediction):
+            file_path = os.path.join(imageSavePath, f'image_at_epoch_{epoch}_#{pred}.png')
+            image = np.asarray(pred * 127.5 + 127.5, dtype='uint8')
             self.save_image(image, file_path)
 
     def generate_image(self, primer):
@@ -103,7 +102,7 @@ class Gan:
         return image
 
     def save_image(self, image, file_path):
-        image = image[0, :, :, 0]
+        image = image[:, :, 0]
         my_dpi = 128
         fig, ax = plt.subplots(1, figsize=(self.imgDims[0] / my_dpi, self.imgDims[0] / my_dpi), dpi=my_dpi)
         ax.set_position([0, 0, 1, 1])
@@ -154,7 +153,7 @@ class Gan:
 
             for batchNum in range(self.stepsPerEpoch):
                 print(f"EPOCH = {epoch}; BATCH = {batchNum}/{self.stepsPerEpoch}")
-                image_batch = self.dataGenerator.getBatch(self.batchSize)
+                image_batch = self.data_generator.getBatch(self.batchSize)
                 self.train_step(image_batch)
 
             if (epoch + 1) % checkpointFrequency == 0:
