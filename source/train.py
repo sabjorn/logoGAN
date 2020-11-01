@@ -12,5 +12,5 @@ gan = Gan(data_generator=data_generator,
           noiseDims=100)
 
 gan.train(epochs=10000,
-          checkpointFrequency=100)
+          checkpointFrequency=1000)
 
