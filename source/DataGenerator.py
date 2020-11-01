@@ -1,28 +1,34 @@
-import numpy as np
 import os
+import logging
+
+import numpy as np
 from PIL import Image
 from tensorflow import float32, convert_to_tensor
-import matplotlib.pyplot as plt
 
 
 class DataGenerator:
     def __init__(self, imgDims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"]):
-        self.selected_data = DataGenerator.create_filelist(datasetPath, filetypes)
-        self.imgDims = imgDims
+        self.logger = logging.getLogger("DataGenerator")
+        
         self.datasetPath = datasetPath
-        self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
-        self.numFiles = len(os.listdir(datasetPath))
-        if not os.path.isfile(self.memmapPath):
-            self.createMemmap()
+        self.selected_data = DataGenerator.create_filelist(datasetPath, filetypes)
+        self.numFiles = len(selected_data)
 
-    def createMemmap(self):
+        self.imgDims = imgDims
+
+        self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
+        if not os.path.isfile(self.memmapPath):
+            self.generate_mmap()
+
+    def generate_mmap(self):
+        self.logger.debug("generating mmap")
         memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.imgDims, self.numFiles))
         for n, imgFile in enumerate(self.selected_data):
-            print(f'Writing {n}/{self.numFiles} ({imgFile})')
+            self.logger.debug(f'Writing {n}/{self.numFiles} ({imgFile})')
             imgFilePath = os.path.join(self.datasetPath, imgFile)
-            memmap[:, :, :, n] = DataGenerator.getProcessedImage(imgFilePath, self.img_dims)
+            memmap[:, :, :, n] = DataGenerator.prepare_image(imgFilePath, self.img_dims)
         del memmap
-        print('done.')
+        self.logger.debug("done")
 
     def getBatch(self, batchSize):
         memmap = np.memmap(self.memmapPath, dtype='float32', mode='r', shape=(*self.imgDims, self.numFiles))
@@ -38,7 +44,7 @@ class DataGenerator:
         return batch
 
     @staticmethod
-    def getProcessedImage(img_file_path, img_dims, convert=None):
+    def prepare_image(img_file_path, img_dims, convert=None):
         img = Image.open(img_file_path)
         
         if convert:
