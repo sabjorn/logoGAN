@@ -7,14 +7,18 @@ from tensorflow import float32, convert_to_tensor
 
 
 class DataGenerator:
-    def __init__(self, imgDims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"]):
+    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], convert_bw=True):
+        self.convert = None
+        if convert_bw:
+            self.convert = "L"
+
         self.logger = logging.getLogger("DataGenerator")
         
         self.datasetPath = datasetPath
         self.selected_data = DataGenerator.create_filelist(datasetPath, filetypes)
-        self.numFiles = len(selected_data)
+        self.numFiles = len(self.selected_data)
 
-        self.imgDims = imgDims
+        self.img_dims = img_dims
 
         self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
         if not os.path.isfile(self.memmapPath):
@@ -22,16 +26,16 @@ class DataGenerator:
 
     def generate_mmap(self):
         self.logger.debug("generating mmap")
-        memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.imgDims, self.numFiles))
+        memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.img_dims, self.numFiles))
         for n, imgFile in enumerate(self.selected_data):
             self.logger.debug(f'Writing {n}/{self.numFiles} ({imgFile})')
             imgFilePath = os.path.join(self.datasetPath, imgFile)
-            memmap[:, :, :, n] = DataGenerator.prepare_image(imgFilePath, self.img_dims)
+            memmap[:, :, :, n] = DataGenerator.prepare_image(imgFilePath, self.img_dims, self.convert)
         del memmap
         self.logger.debug("done")
 
     def getBatch(self, batchSize):
-        memmap = np.memmap(self.memmapPath, dtype='float32', mode='r', shape=(*self.imgDims, self.numFiles))
+        memmap = np.memmap(self.memmapPath, dtype='float32', mode='r', shape=(*self.img_dims, self.numFiles))
         indices = np.random.randint(0, self.numFiles-1, size=batchSize)
         imgArrays = []
         for i in indices:
@@ -42,6 +46,9 @@ class DataGenerator:
         del memmap
 
         return batch
+
+    def __len__(self):
+        return self.numFiles
 
     @staticmethod
     def prepare_image(img_file_path, img_dims, convert=None):
