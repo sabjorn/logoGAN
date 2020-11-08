@@ -91,7 +91,7 @@ class Gan:
         noise = np.random.normal(-1, 1, (num_samples, self.noiseDim))
         prediction = self.generator.predict(noise)
         for i, pred in enumerate(prediction):
-            file_path = os.path.join(imageSavePath, f'image_at_epoch_{epoch}_#{pred}.png')
+            file_path = os.path.join(imageSavePath, f'image_at_epoch_{epoch}_#{i}.png')
             image = np.asarray(pred * 127.5 + 127.5, dtype='uint8')
             self.save_image(image, file_path)
 
