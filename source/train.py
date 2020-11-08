@@ -2,7 +2,7 @@ import logging
 from DataGenerator import DataGenerator
 from Gan import Gan
 
-IMG_DIMS = (128, 128, 1)
+IMG_DIMS = (128, 128, 3)
 DATA_PATH = "/data"
 
 logging.basicConfig(level=logging.DEBUG)

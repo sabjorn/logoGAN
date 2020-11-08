@@ -55,7 +55,7 @@ class Gan:
         model.add(BatchNormalization())
         model.add(LeakyReLU())
 
-        model.add(Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+        model.add(Conv2DTranspose(self.imgDims[2], (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
         assert model.output_shape == (None, self.imgDims[0], self.imgDims[1], self.imgDims[2])
 
         print("generator architecture")
@@ -102,7 +102,7 @@ class Gan:
         return image
 
     def save_image(self, image, file_path):
-        image = image[:, :, 0]
+        image = image[:, :, :]
         my_dpi = 128
         fig, ax = plt.subplots(1, figsize=(self.imgDims[0] / my_dpi, self.imgDims[0] / my_dpi), dpi=my_dpi)
         ax.set_position([0, 0, 1, 1])
