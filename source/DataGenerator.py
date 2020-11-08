@@ -29,8 +29,15 @@ class DataGenerator:
         memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.img_dims, self.numFiles))
         for n, imgFile in enumerate(self.selected_data):
             self.logger.debug(f'Writing {n}/{self.numFiles} ({imgFile})')
-            imgFilePath = os.path.join(self.datasetPath, imgFile)
-            memmap[:, :, :, n] = DataGenerator.prepare_image(imgFilePath, self.img_dims, self.convert)
+            img_file_path = os.path.join(self.datasetPath, imgFile)
+            
+            try:
+                img = Image.open(img_file_path)
+            except Exception as e:
+                self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file_path))
+                continue
+
+            memmap[:, :, :, n] = DataGenerator.prepare_image(img, self.img_dims, self.convert)
         del memmap
         self.logger.debug("done")
 
@@ -51,9 +58,7 @@ class DataGenerator:
         return self.numFiles
 
     @staticmethod
-    def prepare_image(img_file_path, img_dims, convert=None):
-        img = Image.open(img_file_path)
-        
+    def prepare_image(img, img_dims, convert=None):       
         if convert:
             img = img.convert(convert)
         
