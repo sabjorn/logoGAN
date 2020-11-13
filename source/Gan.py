@@ -38,24 +38,24 @@ class Gan:
 
     def create_generator(self):
         model = Sequential()
-        model.add(Dense(self.imgDims[0] // 4 * self.imgDims[1] // 4 * 256, use_bias=False, input_shape=(100,)))
+        model.add(Dense((self.imgDims[0] // 32) * (self.imgDims[1] // 32) * 256, use_bias=False, input_shape=(100,)))
         model.add(BatchNormalization())
         model.add(LeakyReLU())
 
-        model.add(Reshape((self.imgDims[0] // 4, self.imgDims[1] // 4, 256)))
-        assert model.output_shape == (None, self.imgDims[0] // 4, self.imgDims[1] // 4, 256)
+        model.add(Reshape((self.imgDims[0] // 32, self.imgDims[1] // 32, 256)))
+        assert model.output_shape == (None, self.imgDims[0] // 32, self.imgDims[1] // 32, 256)
 
         model.add(Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-        assert model.output_shape == (None, self.imgDims[0] // 4, self.imgDims[1] // 4, 128)
+        assert model.output_shape == (None, self.imgDims[0] // 32, self.imgDims[1] // 32, 128)
         model.add(BatchNormalization())
         model.add(LeakyReLU())
 
-        model.add(Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-        assert model.output_shape == (None, self.imgDims[0] // 2, self.imgDims[1] // 2, 64)
+        model.add(Conv2DTranspose(64, (5, 5), strides=(4, 4), padding='same', use_bias=False))
+        assert model.output_shape == (None, self.imgDims[0] // 8, self.imgDims[1] // 8, 64)
         model.add(BatchNormalization())
         model.add(LeakyReLU())
 
-        model.add(Conv2DTranspose(self.imgDims[2], (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+        model.add(Conv2DTranspose(self.imgDims[2], (5, 5), strides=(8, 8), padding='same', use_bias=False, activation='tanh'))
         assert model.output_shape == (None, self.imgDims[0], self.imgDims[1], self.imgDims[2])
 
         print("generator architecture")
