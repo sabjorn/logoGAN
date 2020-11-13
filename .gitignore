@@ -14,4 +14,4 @@ generated_images
 *.mov
 *.mp4
 *.avi
-
+.DS_Store
