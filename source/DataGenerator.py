@@ -1,8 +1,5 @@
 import os
 import logging
-from multiprocessing import Pool, Value, Manager
-from itertools import product
-from functools import partial
 
 import numpy as np
 from PIL import Image
@@ -20,7 +17,7 @@ class DataGenerator:
         self.datasetPath = datasetPath
         
         image_list = DataGenerator.create_filelist(datasetPath, filetypes)
-        self.selected_data = DataGenerator.filter_broken_images(image_list)        
+        self.selected_data = DataGenerator.filter_broken_images(image_list)     
         self.numFiles = len(self.selected_data)        
         self.img_dims = img_dims
 
@@ -32,13 +29,15 @@ class DataGenerator:
 
     def generate_mmap(self):
         self.logger.info("generating mmap")
-        
-        iterable = zip(range(self.numFiles), self.selected_data)
         memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.img_dims, self.numFiles))
-
-        p = Pool(5)
-        p.starmap(DataGenerator.add_to_mmap, product(iterable, memmap, self.img_dims))
-
+        for n, img_file in enumerate(self.selected_data):
+            try:
+                img = Image.open(img_file)
+                self.logger.info(f'Writing {n}/{self.numFiles} ({img_file})')
+            except Exception as e:
+                self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
+                continue
+            memmap[:, :, :, n] = DataGenerator.prepare_image(img, self.img_dims, self.convert)
         del memmap
 
     def getBatch(self, batchSize):
