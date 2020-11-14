@@ -17,8 +17,9 @@ class DataGenerator:
         self.datasetPath = datasetPath
         
         image_list = DataGenerator.create_filelist(datasetPath, filetypes)
-        self.selected_data = DataGenerator.filter_broken_images(image_list)     
-        self.numFiles = len(self.selected_data)        
+        self.selected_data = DataGenerator.filter_broken_images(image_list)
+        self.numFiles = len(self.selected_data)
+        self.logger.info("total images to process: {0}".format(self.numFiles))
         self.img_dims = img_dims
 
         self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
