@@ -1,5 +1,8 @@
 import os
 import logging
+from multiprocessing import Pool, Value, Manager
+from itertools import product
+from functools import partial
 
 import numpy as np
 from PIL import Image
@@ -15,9 +18,10 @@ class DataGenerator:
             self.convert = "L"
         
         self.datasetPath = datasetPath
-        self.selected_data = DataGenerator.create_filelist(datasetPath, filetypes)
-        self.numFiles = len(self.selected_data)
-
+        
+        image_list = DataGenerator.create_filelist(datasetPath, filetypes)
+        self.selected_data = DataGenerator.filter_broken_images(image_list)        
+        self.numFiles = len(self.selected_data)        
         self.img_dims = img_dims
 
         self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
@@ -28,16 +32,13 @@ class DataGenerator:
 
     def generate_mmap(self):
         self.logger.info("generating mmap")
+        
+        iterable = zip(range(self.numFiles), self.selected_data)
         memmap = np.memmap(self.memmapPath, dtype='float32', mode='w+', shape=(*self.img_dims, self.numFiles))
-        for n, imgFile in enumerate(self.selected_data):
-            img_file_path = os.path.join(self.datasetPath, imgFile)
-            try:
-                img = Image.open(img_file_path)
-                self.logger.info(f'Writing {n}/{self.numFiles} ({imgFile})')
-            except Exception as e:
-                self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file_path))
-                continue
-            memmap[:, :, :, n] = DataGenerator.prepare_image(img, self.img_dims, self.convert)
+
+        p = Pool(5)
+        p.starmap(DataGenerator.add_to_mmap, product(iterable, memmap, self.img_dims))
+
         del memmap
 
     def getBatch(self, batchSize):
@@ -57,6 +58,39 @@ class DataGenerator:
         return self.numFiles
 
     @staticmethod
+    def create_filelist(path, filetypes = [".jpg", ".jpeg"]):
+        all_files = os.listdir(path)
+        all_files = [os.path.join(path, file) for file in all_files]
+        filtered_files = set()
+        for filetype in filetypes:
+            filtered = filter(lambda x: x.endswith(filetype), all_files)
+            filtered_files.update(filtered)
+        return filtered_files
+
+    @staticmethod
+    def filter_broken_images(image_filenames):
+        working_paths = []
+        for path in image_filenames:
+            try:
+                img = Image.open(path)
+                working_paths.append(path)
+            except Exception as e:
+                print("{0} -- error opening image, skipping {1}".format(e, path))
+        return working_paths
+
+    @staticmethod
+    def add_to_mmap(index_path, memmap, img_dims):
+        n, img_file_path = index_path
+        try:
+            img = Image.open(img_file_path)
+            print(f'Writing {n}/{memmap.shape[3]} ({imgFile})')
+        except Exception as e:
+            print("{0} -- error opening image, skipping {1}".format(e, img_file_path))
+            return
+        memmap[:, :, :, n] = DataGenerator.prepare_image(img, img_dims)      
+
+
+    @staticmethod
     def prepare_image(img, img_dims, convert=None):       
         if convert:
             img = img.convert(convert)
@@ -74,15 +108,6 @@ class DataGenerator:
         img_data = np.subtract(img_data, 1)
 
         return img_data
-
-    @staticmethod
-    def create_filelist(path, filetypes = [".jpg", ".jpeg"]):
-        all_files = os.listdir(path)
-        filtered_files = set()
-        for filetype in filetypes:
-            filtered = filter(lambda x: x.endswith(filetype), all_files)
-            filtered_files.update(filtered)
-        return filtered_files
 
     @staticmethod
     def expand2square(pil_img, background_color):
