@@ -1,6 +1,6 @@
 import os
 import logging
-from multiprocessing import Pool, Value, Manager
+from multiprocessing import Pool
 from itertools import product
 from functools import partial
 
