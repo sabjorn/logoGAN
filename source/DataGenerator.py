@@ -48,6 +48,9 @@ class DataGenerator:
     def generate_files(self):
         self.logger.info("generating images on disk")
         for n, img_file in enumerate(self.selected_data):
+            if(os.path.exists(img_file + ".npy")):
+                self.logger.info("file exists, skipping")
+                continue
             try:
                 img = Image.open(img_file)
                 self.logger.info(f'Writing {n}/{self.numFiles} ({img_file})')
