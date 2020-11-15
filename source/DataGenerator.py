@@ -7,12 +7,12 @@ from tensorflow import float32, convert_to_tensor
 
 
 class DataGenerator:
-    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], convert_bw=True):
+    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"]):
         self.logger = logging.getLogger(__name__)
-
         self.convert = None
-        if convert_bw:
+        if (IMG_DIMS[2] == 1):
             self.convert = "L"
+
         
         self.datasetPath = datasetPath
         

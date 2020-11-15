@@ -8,8 +8,7 @@ DATA_PATH = "/data"
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-conver_bw = IMG_DIMS[2] == 1
-data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png'], convert_bw=conver_bw)
+data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png'])
 gan = Gan(data_generator=data_generator,
           imgDims=IMG_DIMS,
           batchSize=64,
