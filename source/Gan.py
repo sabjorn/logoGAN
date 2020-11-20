@@ -17,9 +17,9 @@ class Gan:
     def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, noiseDims=100):
         if data_generator:
             self.data_generator = data_generator
+            self.batchSize = batchSize
             self.stepsPerEpoch = int(len(self.data_generator) / self.batchSize)
 
-        self.batchSize = batchSize
         self.noiseDim = noiseDims
         self.imgDims = imgDims
 
