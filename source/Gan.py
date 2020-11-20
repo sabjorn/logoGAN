@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Dense, LeakyReLU, Flatten, Reshape, Dropout, Conv2D, Conv2DTranspose, BatchNormalization
+from tensorflow.keras.layers import Dense, LeakyReLU, Flatten, Reshape, Dropout, Conv2D, Conv2DTranspose, BatchNormalization, UpSampling2D, AveragePooling2D
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import BinaryCrossentropy
@@ -17,9 +17,9 @@ class Gan:
     def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, noiseDims=100):
         if data_generator:
             self.data_generator = data_generator
-        self.batchSize = batchSize
-        self.stepsPerEpoch = int(len(self.data_generator) / self.batchSize)
+            self.stepsPerEpoch = int(len(self.data_generator) / self.batchSize)
 
+        self.batchSize = batchSize
         self.noiseDim = noiseDims
         self.imgDims = imgDims
 
@@ -38,24 +38,25 @@ class Gan:
 
     def create_generator(self):
         model = Sequential()
-        model.add(Dense((self.imgDims[0] // 32) * (self.imgDims[1] // 32) * 256, use_bias=False, input_shape=(100,)))
+
+        num_layers = int(np.log2(self.imgDims[0]))
+
+        model.add(Dense(4 * 4, use_bias=False, input_shape=(100,)))
         model.add(BatchNormalization())
         model.add(LeakyReLU())
+        model.add(Reshape((4, 4, 1)))
+        assert model.output_shape == (None, 4, 4, 1)
+        
+        for i in range(2, num_layers):
+            dim = 2**(i + 1)
+            model.add(UpSampling2D(size=(2, 2), interpolation='nearest'))
+            model.add(Conv2DTranspose(1, (3, 3), strides=(1, 1), padding='same', use_bias=False))
+            print(model.output_shape)
+            assert model.output_shape == (None, dim, dim, 1)
+            model.add(BatchNormalization())
+            model.add(LeakyReLU())
 
-        model.add(Reshape((self.imgDims[0] // 32, self.imgDims[1] // 32, 256)))
-        assert model.output_shape == (None, self.imgDims[0] // 32, self.imgDims[1] // 32, 256)
-
-        model.add(Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-        assert model.output_shape == (None, self.imgDims[0] // 32, self.imgDims[1] // 32, 128)
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-
-        model.add(Conv2DTranspose(64, (5, 5), strides=(4, 4), padding='same', use_bias=False))
-        assert model.output_shape == (None, self.imgDims[0] // 8, self.imgDims[1] // 8, 64)
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-
-        model.add(Conv2DTranspose(self.imgDims[2], (5, 5), strides=(8, 8), padding='same', use_bias=False, activation='tanh'))
+        model.add(Conv2DTranspose(self.imgDims[2], (1, 1), strides=(1, 1), padding='same', use_bias=False, activation='tanh'))
         assert model.output_shape == (None, self.imgDims[0], self.imgDims[1], self.imgDims[2])
 
         print("generator architecture")
@@ -64,15 +65,24 @@ class Gan:
         return model
 
     def create_discriminator(self):
+        num_layers = int(np.log2(self.imgDims[0]))
+
         model = Sequential()
-        model.add(Conv2D(64, (5, 5), strides=(2, 2), padding='same',
+
+        model.add(Conv2D(1, (1, 1), strides=(1, 1), padding='same',
                          input_shape=[self.imgDims[0], self.imgDims[1], self.imgDims[2]]))
         model.add(LeakyReLU())
         model.add(Dropout(0.3))
+        model.add(AveragePooling2D())
 
-        model.add(Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
-        model.add(LeakyReLU())
-        model.add(Dropout(0.3))
+        for i in range(2, num_layers):
+            dim = 2**(num_layers - i + 1)
+            model.add(Conv2D(1, (3, 3), strides=(1, 1), padding='same',
+                             input_shape=[self.imgDims[0], self.imgDims[1], self.imgDims[2]]))
+            assert model.output_shape == (None, dim, dim, 1)
+            model.add(LeakyReLU())
+            model.add(Dropout(0.3))
+            model.add(AveragePooling2D())
 
         model.add(Flatten())
         model.add(Dense(1))
