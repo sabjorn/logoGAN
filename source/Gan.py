@@ -150,6 +150,7 @@ class Gan:
             gen_loss = self.generator_loss(fake_output)
             disc_loss = self.discriminator_loss(real_output, fake_output)
 
+        print(f"generator loss = {gen_loss}; discriminator loss = {disc_loss}")
         gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
         gradients_of_discriminator = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
 
