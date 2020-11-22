@@ -2,7 +2,7 @@ import logging
 from DataGenerator import DataGenerator
 from Gan import Gan
 
-IMG_DIMS = (1024, 1024, 3)
+IMG_DIMS = (512, 512, 3)
 DATA_PATH = "/data"
 
 logging.basicConfig(level=logging.DEBUG)
@@ -15,5 +15,5 @@ gan = Gan(data_generator=data_generator,
           noiseDims=100)
 
 gan.train(epochs=10000,
-          checkpointFrequency=1000)
+          checkpointFrequency=100)
 
