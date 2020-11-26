@@ -1,8 +1,10 @@
 from tensorflow.keras.layers import Dense, LeakyReLU, Flatten, Reshape, Dropout, Conv2D, Conv2DTranspose, BatchNormalization, UpSampling2D, AveragePooling2D
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.losses import BinaryCrossentropy
-from tensorflow import random, ones_like, zeros_like, GradientTape, function
+from tensorflow import random, ones_like, zeros_like, GradientTape, function, reduce_mean, sqrt, reduce_sum
+from functools import partial
+
 from matplotlib.transforms import Bbox
 import os
 import time
@@ -14,7 +16,7 @@ from DataGenerator import DataGenerator
 
 
 class Gan:
-    def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, noiseDims=100):
+    def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, gradient_penalty_weight=10., noiseDims=100):
         if data_generator:
             self.data_generator = data_generator
             self.batchSize = batchSize
@@ -30,9 +32,9 @@ class Gan:
         if not os.path.isdir(self.modelSavePath):
             os.mkdir(self.modelSavePath)
 
-        self.cross_entropy = BinaryCrossentropy(from_logits=True)
+        self.gradient_penalty_weight = gradient_penalty_weight
         self.generatorOptimizer = Adam(1e-4)
-        self.discriminatorOptimizer = Adam(1e-4)
+        self.discriminatorOptimizer = RMSprop(0.0005)
         self.discriminator = self.create_discriminator()
         self.generator = self.create_generator()
 
@@ -128,14 +130,25 @@ class Gan:
     def loadGenerator(self, filePath):
         self.generator.load_weights(filePath)
 
-    def discriminator_loss(self, real_output, fake_output):
-        real_loss = self.cross_entropy(ones_like(real_output), real_output)
-        fake_loss = self.cross_entropy(zeros_like(fake_output), fake_output)
-        total_loss = real_loss + fake_loss
-        return total_loss
+    def discriminator_loss(self, real_output, fake_output, d_regularizer):
+        return reduce_mean(real_output) - reduce_mean(fake_output) + d_regularizer * self.gradient_penalty_weight
+
 
     def generator_loss(self, fake_output):
-        return self.cross_entropy(ones_like(fake_output), fake_output)
+        return reduce_mean(fake_output)
+    
+    def gradient_penalty(self, x, x_gen):
+        """from https://colab.research.google.com/github/timsainb/tensorflow2-generative-models/blob/master/3.0-WGAN-GP-fashion-mnist.ipynb#scrollTo=Wyipg-4oSYb1
+        """
+        epsilon = random.uniform(x.shape, 0.0, 1.0)
+        x_hat = epsilon * x + (1 - epsilon) * x_gen
+        with GradientTape() as t:
+            t.watch(x_hat)
+            d_hat = self.discriminator(x_hat)
+        gradients = t.gradient(d_hat, x_hat)
+        ddx = sqrt(reduce_sum(gradients ** 2, axis=[1, 2]))
+        d_regularizer = reduce_mean((ddx - 1.0) ** 2)
+        return d_regularizer
 
     @function
     def train_step(self, images):
@@ -144,11 +157,15 @@ class Gan:
         with GradientTape() as gen_tape, GradientTape() as disc_tape:
             generated_images = self.generator(noise, training=True)
 
+            # in proper WGAN this should happen 5 times for each epoch
+            # can this be done with nested tapes?
             real_output = self.discriminator(images, training=True)
             fake_output = self.discriminator(generated_images, training=True)
+            
+            d_regularizer = self.gradient_penalty(images, generated_images)
 
             gen_loss = self.generator_loss(fake_output)
-            disc_loss = self.discriminator_loss(real_output, fake_output)
+            disc_loss = self.discriminator_loss(real_output, fake_output, d_regularizer)
 
         print(f"generator loss = {gen_loss}; discriminator loss = {disc_loss}")
         gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
