@@ -28,6 +28,9 @@ class DataGenerator:
             if not os.path.isfile(self.memmapPath):
                 self.generate_mmap()
         else:
+            self.numpy_img_path = os.path.join(self.datasetPath, "{0}_{1}_{2}".format(*self.img_dims))
+            if not os.path.exists(self.numpy_img_path):
+                os.makedirs(self.numpy_img_path)
             self.generate_files()
 
         self.logger.info("done")
@@ -47,8 +50,11 @@ class DataGenerator:
 
     def generate_files(self):
         self.logger.info("generating images on disk")
+
         for n, img_file in enumerate(self.selected_data):
-            if(os.path.exists(img_file + ".npy")):
+            img_name = os.path.split(img_file)[1]
+            complete_img_path = os.path.join(self.numpy_img_path, img_name + ".npy")
+            if(os.path.exists(complete_img_path)):
                 self.logger.info("file exists, skipping")
                 continue
             try:
@@ -57,7 +63,7 @@ class DataGenerator:
             except Exception as e:
                 self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
                 continue
-            np.save(img_file, DataGenerator.prepare_image(img, self.img_dims, self.convert))
+            np.save(complete_img_path, DataGenerator.prepare_image(img, self.img_dims, self.convert))
 
 
     def getBatch(self, batchSize):
@@ -74,7 +80,9 @@ class DataGenerator:
             return batch
 
         for i in indices:
-            img = np.load(self.selected_data[i] + ".npy")
+            img_name = os.path.split(self.selected_data[i])[1]
+            complete_img_path = os.path.join(self.numpy_img_path, img_name + ".npy")
+            img = np.load(complete_img_path)
             imgArrays.append(img)
         batch = np.stack(imgArrays, axis=0)
         batch = convert_to_tensor(batch, dtype=float32)
