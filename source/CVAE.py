@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import json
 
 import numpy as np
 from PIL import Image
@@ -40,8 +41,9 @@ class CVAE:
         if not os.path.isdir(self.modelSavePath):
             os.mkdir(self.modelSavePath)
 
-        self.encoder_optimizer = Adam(1e-4)
-        self.decoder_optimizer = Adam(1e-4)
+        self.learning_rate = 1e-4
+        self.encoder_optimizer = Adam(self.learning_rate)
+        self.decoder_optimizer = Adam(self.learning_rate)
         self.encoder = self.create_encoder()
         self.decoder = self.create_decoder()
 
@@ -123,13 +125,18 @@ class CVAE:
 
 
     def train(self, epochs, checkpoint_frequency, num_checkpoint_image=1):
+        loss_record = []
+        start_time = time.time()
+
         for epoch in range(epochs):
             start = time.time()
 
             for batchNum in range(self.steps_per_epoch):
                 print(f"EPOCH = {epoch}; BATCH = {batchNum}/{self.steps_per_epoch}")
                 image_batch = self.data_generator.getBatch(self.batch_size)
-                print(self.train_step(image_batch))
+                loss_data = self.train_step(image_batch)
+                loss_record.append(loss_record)
+
 
             if (epoch + 1) % checkpoint_frequency == 0:
                 self.save_random_images(epoch + 1, num_checkpoint_image, self.imageSavePath)
@@ -138,3 +145,15 @@ class CVAE:
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
 
         self.save_random_images(epochs, num_samples=5, imageSavePath=self.imageSavePath)
+
+        data_output = {
+            "start_time": start_time,
+            "end_time": time.time(),
+            "learning_rate": self.learning_rate,
+            "input_shape": self.input_shape,
+            "latent_dim": self.latent_dim,
+            "loss_record": loss_record
+        }
+        with open('../experiment.json', 'w') as f:
+            json.dump(data_output, f)
+
