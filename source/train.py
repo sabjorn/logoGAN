@@ -13,9 +13,9 @@ data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], 
 cvae = CVAE(data_generator=data_generator,
           input_shape=IMG_DIMS,
           batch_size=128,
-          latent_dim=16)
+          latent_dim=128)
 
-cvae.train(epochs=5000,
+cvae.train(epochs=10000,
           checkpoint_frequency = 100, 
           num_checkpoint_image=1)
 
