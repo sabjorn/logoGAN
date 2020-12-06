@@ -71,7 +71,7 @@ class CVAE:
         x = layers.Reshape((N, N, 64))(x)
         x = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
         x = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")(x)
-        decoder_outputs = layers.Conv2DTranspose(self.input_shape[2], 3, activation="sigmoid", padding="same")(x)
+        decoder_outputs = layers.Conv2DTranspose(self.input_shape[2], 3, activation="tanh", padding="same")(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
         decoder.summary()
 
