@@ -135,6 +135,10 @@ class CVAE:
                 print(f"EPOCH = {epoch}; BATCH = {batchNum}/{self.steps_per_epoch}")
                 image_batch = self.data_generator.getBatch(self.batch_size)
                 loss_data = self.train_step(image_batch)
+                
+                loss_data['loss'] = loss_data['loss'].numpy()
+                loss_data['reconstruction_loss'] = loss_data['reconstruction_loss'].numpy()
+                loss_data['kl_loss'] = loss_data['kl_loss'].numpy() 
                 loss_record.append(loss_record)
 
 
