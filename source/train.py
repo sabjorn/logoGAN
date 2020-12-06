@@ -13,7 +13,7 @@ data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], 
 cvae = CVAE(data_generator=data_generator,
           input_shape=IMG_DIMS,
           batch_size=128,
-          latent_dim=128)
+          latent_dim=32)
 
 cvae.train(epochs=10000,
           checkpoint_frequency = 100, 
