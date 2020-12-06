@@ -129,7 +129,7 @@ class CVAE:
             for batchNum in range(self.steps_per_epoch):
                 print(f"EPOCH = {epoch}; BATCH = {batchNum}/{self.steps_per_epoch}")
                 image_batch = self.data_generator.getBatch(self.batch_size)
-                self.train_step(image_batch)
+                print(self.train_step(image_batch))
 
             if (epoch + 1) % checkpoint_frequency == 0:
                 self.save_random_images(epoch + 1, num_checkpoint_image, self.imageSavePath)
