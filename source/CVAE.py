@@ -64,15 +64,17 @@ class CVAE:
 
     def create_decoder(self):
         num_layers = 2
-        strides = 2
-        N = self.input_shape[0] // strides**strides 
+        scale = 2
+        N = self.input_shape[0] // scale ** num_layers
 
         latent_inputs = keras.Input(shape=(self.latent_dim,))
 
         x = layers.Dense(N * N * 64, activation="relu")(latent_inputs)
         x = layers.Reshape((N, N, 64))(x)
-        x = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
-        x = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")(x)
+        x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+        x = layers.Conv2DTranspose(64, 3, activation="relu", strides=1, padding="same")(x)
+        x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+        x = layers.Conv2DTranspose(32, 3, activation="relu", strides=1, padding="same")(x)
         decoder_outputs = layers.Conv2DTranspose(self.input_shape[2], 3, activation="tanh", padding="same")(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
         decoder.summary()
