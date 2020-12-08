@@ -50,9 +50,9 @@ class CVAE:
     def create_encoder(self):
         encoder_inputs = keras.Input(shape=self.input_shape)
 
-        x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
+        x = layers.Conv2D(16, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
+        x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(x)
         x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
-        x = layers.Conv2D(128, 3, activation="relu", strides=2, padding="same")(x)
         x = layers.Flatten()(x)
         x = layers.Dense(16, activation="relu")(x)
         z_mean = layers.Dense(self.latent_dim, name="z_mean")(x)
@@ -70,14 +70,14 @@ class CVAE:
 
         latent_inputs = keras.Input(shape=(self.latent_dim,))
 
-        x = layers.Dense(N * N * 128, activation="relu")(latent_inputs)
-        x = layers.Reshape((N, N, 128))(x)
-        x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
-        x = layers.Conv2DTranspose(128, 3, activation="relu", strides=1, padding="same")(x)
+        x = layers.Dense(N * N * 64, activation="relu")(latent_inputs)
+        x = layers.Reshape((N, N, 64))(x)
         x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
         x = layers.Conv2DTranspose(64, 3, activation="relu", strides=1, padding="same")(x)
         x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
         x = layers.Conv2DTranspose(32, 3, activation="relu", strides=1, padding="same")(x)
+        x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+        x = layers.Conv2DTranspose(16, 3, activation="relu", strides=1, padding="same")(x)
         decoder_outputs = layers.Conv2DTranspose(self.input_shape[2], 3, activation="tanh", padding="same")(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
         decoder.summary()
