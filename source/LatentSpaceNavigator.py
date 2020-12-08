@@ -23,6 +23,7 @@ def createVideo(contrast, model, latent_dim, output_file="../generated_video/vid
     if not os.path.isdir(frames_dir):
         os.mkdir(frames_dir)
 
+    frame_count = 0
     old_seed = np.random.uniform(-contrast, contrast, latent_dim)
     for cycle in range(num_cycles):
         new_seed = np.random.uniform(-contrast, contrast, latent_dim)
@@ -34,16 +35,17 @@ def createVideo(contrast, model, latent_dim, output_file="../generated_video/vid
                 image = image[0]
             if(sr_model):
                 image = upscale_image(image, sr_model)
-            image_path = os.path.join(video_dir, "frames", f"test_{str((cycle * n_steps) + i).zfill(3)}.png")
+            image_path = os.path.join(video_dir, "frames", f"test_{str(frame_count).zfill(9)}.png")
+            frame_count += 1
             print(f"saving image for cycle {cycle} and vector {i} in {image_path}")
             Image.fromarray(image).save(image_path)
 
         old_seed = new_seed
 
-    os.system("ffmpeg -y -framerate {0} -i {1}/test_%03d.png -vcodec libx264 {2}".format(framerate, frames_dir, output_file))
+    os.system("ffmpeg -y -framerate {0} -i {1}/test_%09d.png -vcodec libx264 {2}".format(framerate, frames_dir, output_file))
     
-    if(cleanup_after):
-        shutil.rmtree(frames_dir)
+    # if(cleanup_after):
+    #     shutil.rmtree(frames_dir)
 
 
 def interpolate_points(p1, p2, n_steps=100):
