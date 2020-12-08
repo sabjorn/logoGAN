@@ -98,6 +98,11 @@ class CVAE:
             image = np.asarray(pred * 127.5 + 127.5, dtype='uint8')
             Image.fromarray(image).save(file_path)
 
+    def generate_image(self, z_sample):
+        x_decoded = self.decoder.predict(z_sample)
+        pred = x_decoded.reshape(self.input_shape)
+        return np.asarray(pred * 127.5 + 127.5, dtype='uint8')
+
     def load_encoder(self, filePath):
         self.encoder.load_weights(filePath)
 
