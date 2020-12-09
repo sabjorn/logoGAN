@@ -1,29 +1,34 @@
 import os
 import shutil
-
-from Gan import Gan
-import numpy as np
 import sys
-import PIL.Image as Image
+import argparse
+import subprocess as sp
+
+import numpy as np
+
 sys.path.append("../ThirdParty/super-resolution")
 from model.srgan import generator
 from model import resolve_single
 
-from CVAE import CVAE
-
+import PIL.Image as Image
 from tensorflow import keras
 
-import argparse
+from CVAE import CVAE
+from Gan import Gan
 
+def createVideo(contrast, model, input_shape, latent_dim, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, sr_model=None):
+    command = [ "ffmpeg",
+            '-y', # (optional) overwrite output file if it exists
+            '-f', 'rawvideo',
+            '-vcodec','rawvideo',
+            '-s', f"{input_shape[0]}x{input_shape[1]}", # size of one frame
+            '-pix_fmt', 'rgb24',
+            '-r', f"{framerate}", # frames per second
+            '-i', '-', # The imput comes from a pipe
+            '-an', # Tells FFMPEG not to expect any audio
+            f"{output_file}" ]
+    pipe = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
 
-def createVideo(contrast, model, latent_dim, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, sr_model=None, cleanup_after=False):
-    video_dir = os.path.split(output_file)[0]
-    frames_dir = os.path.join(video_dir, "frames")
-    
-    if not os.path.isdir(frames_dir):
-        os.mkdir(frames_dir)
-
-    frame_count = 0
     old_seed = np.random.uniform(-contrast, contrast, latent_dim)
     for cycle in range(num_cycles):
         new_seed = np.random.uniform(-contrast, contrast, latent_dim)
@@ -35,18 +40,11 @@ def createVideo(contrast, model, latent_dim, output_file="../generated_video/vid
                 image = image[0]
             if(sr_model):
                 image = upscale_image(image, sr_model)
-            image_path = os.path.join(video_dir, "frames", f"test_{str(frame_count).zfill(9)}.png")
-            frame_count += 1
-            print(f"saving image for cycle {cycle} and vector {i} in {image_path}")
-            Image.fromarray(image).save(image_path)
-
+            print(f"cycle {cycle}, vector {i}")
+            pipe.stdin.write(image.tostring())
         old_seed = new_seed
-
-    os.system("ffmpeg -y -framerate {0} -i {1}/test_%09d.png -vcodec libx264 {2}".format(framerate, frames_dir, output_file))
     
-    # if(cleanup_after):
-    #     shutil.rmtree(frames_dir)
-
+    pipe.terminate()
 
 def interpolate_points(p1, p2, n_steps=100):
     interpolation_plane = np.zeros([n_steps, p1.shape[0]])
@@ -100,11 +98,6 @@ if __name__ == '__main__':
         help="output filename of video",
         type=str,
         default="../generated_video/video.mp4")
-    parser.add_argument(
-        "-k",
-        "--keepframes",
-        help="flag to keep the generated video frames after creating video",
-        action="store_true")
     args = parser.parse_args()
 
     model_weights = args.model
@@ -125,4 +118,4 @@ if __name__ == '__main__':
         container = Gan(data_generator=None, imgDims=input_shape, noiseDims=latent_dim)
         container.generator = model    
     
-    createVideo(args.depth, container, latent_dim, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output, cleanup_after=(not args.keepframes))
+    createVideo(args.depth, container, input_shape, latent_dim, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output)
