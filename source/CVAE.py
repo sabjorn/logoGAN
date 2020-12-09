@@ -50,8 +50,7 @@ class CVAE:
     def create_encoder(self):
         encoder_inputs = keras.Input(shape=self.input_shape)
 
-        x = layers.Conv2D(16, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
-        x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(x)
+        x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
         x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
         x = layers.Flatten()(x)
         x = layers.Dense(16, activation="relu")(x)
@@ -64,7 +63,7 @@ class CVAE:
         return encoder
 
     def create_decoder(self):
-        num_layers = 3 
+        num_layers = 2
         scale = 2
         N = self.input_shape[0] // scale ** num_layers
 
@@ -76,8 +75,6 @@ class CVAE:
         x = layers.Conv2DTranspose(64, 3, activation="relu", strides=1, padding="same")(x)
         x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
         x = layers.Conv2DTranspose(32, 3, activation="relu", strides=1, padding="same")(x)
-        x = layers.UpSampling2D(size=(2, 2), interpolation='nearest')(x)
-        x = layers.Conv2DTranspose(16, 3, activation="relu", strides=1, padding="same")(x)
         decoder_outputs = layers.Conv2DTranspose(self.input_shape[2], 3, activation="tanh", padding="same")(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
         decoder.summary()
