@@ -16,7 +16,10 @@ from tensorflow import keras
 from CVAE import CVAE
 from Gan import Gan
 
-def createVideo(contrast, model, input_shape, latent_dim, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, sr_model=None):
+def createVideo(contrast, network, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, sr_model=None):
+    input_shape = network.input_shape
+    latent_dim = network.latent_dim
+
     command = [ "ffmpeg",
             '-y', # (optional) overwrite output file if it exists
             '-f', 'rawvideo',
@@ -35,7 +38,7 @@ def createVideo(contrast, model, input_shape, latent_dim, output_file="../genera
         interpolated = interpolate_points(old_seed, new_seed, n_steps=n_steps)
 
         for i, frame in enumerate(interpolated):
-            image = model.generate_image(np.expand_dims(frame, axis=0))
+            image = network.generate_image(np.expand_dims(frame, axis=0))
             if(image.ndim > 3):
                 image = image[0]
             if(sr_model):
@@ -60,6 +63,26 @@ def upscale_image(image, model, resize=(256, 256)):
     upscaled_resized = np.asarray(upscaled_resized)
     upscaled_second = resolve_single(model, upscaled_resized)
     return np.asarray(upscaled_second)
+
+def load_model(model_file):
+    model = keras.models.load_model(model_file)
+    
+    input_shape = model.output_shape[1:]
+    latent_dim = model.input_shape[1]
+    
+    if("decoder" in model_file):
+        print("using CVAE")
+        container = CVAE(
+              input_shape=input_shape,
+              latent_dim=latent_dim)
+        container.decoder = model
+    
+    if("generator" in model_file):
+        print("using GAN")
+        container = Gan(data_generator=None, imgDims=input_shape, noiseDims=latent_dim)
+        container.generator = model
+
+    return container
 
 
 if __name__ == '__main__':
@@ -100,22 +123,5 @@ if __name__ == '__main__':
         default="../generated_video/video.mp4")
     args = parser.parse_args()
 
-    model_weights = args.model
-    model = keras.models.load_model(model_weights)
-    
-    input_shape = model.output_shape[1:]
-    latent_dim = model.input_shape[1]
-    
-    if("decoder" in model_weights):
-        print("using CVAE")
-        container = CVAE(
-              input_shape=input_shape,
-              latent_dim=latent_dim)
-        container.decoder = model
-    
-    if("generator" in model_weights):
-        print("using GAN")
-        container = Gan(data_generator=None, imgDims=input_shape, noiseDims=latent_dim)
-        container.generator = model    
-    
-    createVideo(args.depth, container, input_shape, latent_dim, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output)
+    network = load_model(args.model)
+    createVideo(args.depth, network, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output)
