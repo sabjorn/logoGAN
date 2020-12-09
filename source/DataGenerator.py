@@ -7,8 +7,10 @@ from tensorflow import float32, convert_to_tensor
 
 
 class DataGenerator:
-    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], use_memmap=True):
+    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], use_memmap=True, background_color=(0, 0, 0)):
         self.logger = logging.getLogger(__name__)
+
+        self.background_color = background_color
 
         self.use_memmap = use_memmap
         self.datasetPath = datasetPath
@@ -45,7 +47,7 @@ class DataGenerator:
             except Exception as e:
                 self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
                 continue
-            memmap[:, :, :, n] = DataGenerator.prepare_image(img, self.img_dims, self.convert)
+            memmap[:, :, :, n] = DataGenerator.prepare_image(img, self.img_dims, self.convert, background_color=self.background_color)
         del memmap
 
     def generate_files(self):
@@ -63,7 +65,7 @@ class DataGenerator:
             except Exception as e:
                 self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
                 continue
-            np.save(complete_img_path, DataGenerator.prepare_image(img, self.img_dims, self.convert))
+            np.save(complete_img_path, DataGenerator.prepare_image(img, self.img_dims, self.convert, background_color=self.background_color))
 
 
     def getBatch(self, batchSize):
@@ -125,11 +127,11 @@ class DataGenerator:
 
 
     @staticmethod
-    def prepare_image(img, img_dims, convert=None):       
+    def prepare_image(img, img_dims, convert=None, background_color=0):       
         if convert:
             img = img.convert(convert)
         
-        img = DataGenerator.expand2square(img, 0)
+        img = DataGenerator.expand2square(img, background_color)
         img = img.resize(img_dims[:2], Image.LANCZOS)
 
         img_data = np.asarray(img)
@@ -144,7 +146,7 @@ class DataGenerator:
         return img_data
 
     @staticmethod
-    def expand2square(pil_img, background_color):
+    def expand2square(pil_img, background_color=0):
         width, height = pil_img.size
         if width == height:
             return pil_img
