@@ -16,7 +16,7 @@ from tensorflow import keras
 from CVAE import CVAE
 from Gan import Gan
 
-def createVideo(contrast, network, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, sr_model=None):
+def createVideo(contrast, network, output_file="../generated_video/video.mp4", framerate=30, num_cycles=30, n_steps=100, seed=None, sr_model=None):
     input_shape = network.input_shape
     latent_dim = network.latent_dim
 
@@ -31,6 +31,9 @@ def createVideo(contrast, network, output_file="../generated_video/video.mp4", f
             '-an', # Tells FFMPEG not to expect any audio
             f"{output_file}" ]
     pipe = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
+
+    if(seed):
+        np.random.seed(seed)
 
     old_seed = np.random.uniform(-contrast, contrast, latent_dim)
     for cycle in range(num_cycles):
@@ -121,7 +124,13 @@ if __name__ == '__main__':
         help="output filename of video",
         type=str,
         default="../generated_video/video.mp4")
+    parser.add_argument(
+        "-r",
+        "--seed",
+        help="random number seed",
+        type=int,
+        default=None)
     args = parser.parse_args()
 
     network = load_model(args.model)
-    createVideo(args.depth, network, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output)
+    createVideo(args.depth, network, num_cycles=args.cycles, n_steps=args.steps, framerate=args.framerate, output_file=args.output, seed=args.seed)
