@@ -25,7 +25,7 @@ class Sampling(layers.Layer):
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
 class CVAE:
-    def __init__(self, data_generator=None, input_shape=(128, 128, 1), batch_size=16, latent_dim=100):
+    def __init__(self, data_generator=None, input_shape=(128, 128, 1), batch_size=16, latent_dim=100, seed=None):
         if data_generator:
             self.data_generator = data_generator
             self.batch_size = batch_size
@@ -33,6 +33,8 @@ class CVAE:
 
         self.latent_dim = latent_dim
         self.input_shape = input_shape
+
+        self.seed = seed
 
         self.imageSavePath = '../generated_images'
         if not os.path.isdir(self.imageSavePath):
@@ -86,6 +88,9 @@ class CVAE:
         self.decoder.save(os.path.join(self.modelSavePath, f"decoder_at_epoch{epoch}.h5"))
 
     def save_random_images(self, epoch, num_samples, imageSavePath):
+        if(self.seed):
+            np.random.seed(self.seed)
+        
         z_sample = np.random.normal(-1, 1, (num_samples, self.latent_dim))
         x_decoded = self.decoder.predict(z_sample)
 

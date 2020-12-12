@@ -16,7 +16,7 @@ from DataGenerator import DataGenerator
 
 
 class Gan:
-    def __init__(self, data_generator=None, input_shape=(128, 128, 1), batchSize=16, gradient_penalty_weight=10., latent_dim=100):
+    def __init__(self, data_generator=None, input_shape=(128, 128, 1), batchSize=16, gradient_penalty_weight=10., latent_dim=100, seed=None):
         if data_generator:
             self.data_generator = data_generator
             self.batchSize = batchSize
@@ -24,6 +24,8 @@ class Gan:
 
         self.latent_dim = latent_dim
         self.input_shape = input_shape
+
+        self.seed = seed
 
         self.imageSavePath = '../generated_images'
         if not os.path.isdir(self.imageSavePath):
@@ -100,6 +102,9 @@ class Gan:
 
     def save_random_images(self, epoch, num_samples, imageSavePath):
         # seed = random.normal([num_samples, self.latent_dim])
+        if(self.seed):
+            np.random.seed(self.seed)
+            
         noise = np.random.normal(-1, 1, (num_samples, self.latent_dim))
         prediction = self.generator.predict(noise)
         for i, pred in enumerate(prediction):
