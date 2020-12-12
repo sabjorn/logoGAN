@@ -16,14 +16,14 @@ from DataGenerator import DataGenerator
 
 
 class Gan:
-    def __init__(self, data_generator=None, imgDims=(128, 128, 1), batchSize=16, gradient_penalty_weight=10., noiseDims=100):
+    def __init__(self, data_generator=None, input_shape=(128, 128, 1), batchSize=16, gradient_penalty_weight=10., latent_dim=100):
         if data_generator:
             self.data_generator = data_generator
             self.batchSize = batchSize
             self.stepsPerEpoch = int(len(self.data_generator) / self.batchSize)
 
-        self.noiseDim = noiseDims
-        self.imgDims = imgDims
+        self.latent_dim = latent_dim
+        self.input_shape = input_shape
 
         self.imageSavePath = '../generated_images'
         if not os.path.isdir(self.imageSavePath):
@@ -41,7 +41,7 @@ class Gan:
     def create_generator(self):
         model = Sequential()
 
-        num_layers = int(np.log2(self.imgDims[0]))
+        num_layers = int(np.log2(self.input_shape[0]))
 
         model.add(Dense(4 * 4, use_bias=False, input_shape=(100,)))
         model.add(BatchNormalization())
@@ -58,8 +58,8 @@ class Gan:
             model.add(BatchNormalization())
             model.add(LeakyReLU())
 
-        model.add(Conv2DTranspose(self.imgDims[2], (1, 1), strides=(1, 1), padding='same', use_bias=False, activation='tanh'))
-        assert model.output_shape == (None, self.imgDims[0], self.imgDims[1], self.imgDims[2])
+        model.add(Conv2DTranspose(self.input_shape[2], (1, 1), strides=(1, 1), padding='same', use_bias=False, activation='tanh'))
+        assert model.output_shape == (None, self.input_shape[0], self.input_shape[1], self.input_shape[2])
 
         print("generator architecture")
         model.summary()
@@ -67,12 +67,12 @@ class Gan:
         return model
 
     def create_discriminator(self):
-        num_layers = int(np.log2(self.imgDims[0]))
+        num_layers = int(np.log2(self.input_shape[0]))
 
         model = Sequential()
 
         model.add(Conv2D(1, (1, 1), strides=(1, 1), padding='same',
-                         input_shape=[self.imgDims[0], self.imgDims[1], self.imgDims[2]]))
+                         input_shape=[self.input_shape[0], self.input_shape[1], self.input_shape[2]]))
         model.add(LeakyReLU())
         model.add(Dropout(0.3))
         model.add(AveragePooling2D())
@@ -80,7 +80,7 @@ class Gan:
         for i in range(2, num_layers):
             dim = 2**(num_layers - i + 1)
             model.add(Conv2D(1, (3, 3), strides=(1, 1), padding='same',
-                             input_shape=[self.imgDims[0], self.imgDims[1], self.imgDims[2]]))
+                             input_shape=[self.input_shape[0], self.input_shape[1], self.input_shape[2]]))
             assert model.output_shape == (None, dim, dim, 1)
             model.add(LeakyReLU())
             model.add(Dropout(0.3))
@@ -99,8 +99,8 @@ class Gan:
         self.discriminator.save(os.path.join(self.modelSavePath, f"discriminator_at_epoch{epoch}.h5"))
 
     def save_random_images(self, epoch, num_samples, imageSavePath):
-        # seed = random.normal([num_samples, self.noiseDim])
-        noise = np.random.normal(-1, 1, (num_samples, self.noiseDim))
+        # seed = random.normal([num_samples, self.latent_dim])
+        noise = np.random.normal(-1, 1, (num_samples, self.latent_dim))
         prediction = self.generator.predict(noise)
         for i, pred in enumerate(prediction):
             file_path = os.path.join(imageSavePath, f'image_at_epoch_{epoch}_#{i}.png')
@@ -116,14 +116,14 @@ class Gan:
     def save_image(self, image, file_path):
         image = image[:, :, :]
         my_dpi = 128
-        fig, ax = plt.subplots(1, figsize=(self.imgDims[0] / my_dpi, self.imgDims[0] / my_dpi), dpi=my_dpi)
+        fig, ax = plt.subplots(1, figsize=(self.input_shape[0] / my_dpi, self.input_shape[0] / my_dpi), dpi=my_dpi)
         ax.set_position([0, 0, 1, 1])
 
         plt.imshow(image, cmap='gray')
         plt.axis('off')
 
         fig.savefig(file_path,
-                    bbox_inches=Bbox([[0, 0], [self.imgDims[0] / my_dpi, self.imgDims[0] / my_dpi]]),
+                    bbox_inches=Bbox([[0, 0], [self.input_shape[0] / my_dpi, self.input_shape[0] / my_dpi]]),
                     dpi=my_dpi)
         plt.close()
 
@@ -152,7 +152,7 @@ class Gan:
 
     @function
     def train_step(self, images):
-        noise = random.normal([self.batchSize, self.noiseDim])
+        noise = random.normal([self.batchSize, self.latent_dim])
 
         with GradientTape() as gen_tape, GradientTape() as disc_tape:
             generated_images = self.generator(noise, training=True)

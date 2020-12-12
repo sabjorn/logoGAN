@@ -82,7 +82,7 @@ def load_model(model_file):
     
     if("generator" in model_file):
         print("using GAN")
-        container = Gan(data_generator=None, imgDims=input_shape, noiseDims=latent_dim)
+        container = Gan(data_generator=None, input_shape=input_shape, latent_dim=latent_dim)
         container.generator = model
 
     return container
