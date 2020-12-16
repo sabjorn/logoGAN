@@ -1,4 +1,5 @@
 import os
+import glob
 import logging
 
 import numpy as np
@@ -7,10 +8,11 @@ from tensorflow import float32, convert_to_tensor
 
 
 class DataGenerator:
-    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], use_memmap=True, background_color=(0, 0, 0)):
+    def __init__(self, img_dims, datasetPath, filetypes=[".jpg", ".jpeg", ".png"], use_memmap=True, background_color=(0, 0, 0), crop=False, load_from_disk=False):
         self.logger = logging.getLogger(__name__)
 
         self.background_color = background_color
+        self.crop = crop
 
         self.use_memmap = use_memmap
         self.datasetPath = datasetPath
@@ -24,6 +26,8 @@ class DataGenerator:
         self.convert = None
         if (self.img_dims[2] == 1):
             self.convert = "L"
+
+        self.load_from_disk = load_from_disk # bypass loading images
 
         self.memmapPath = os.path.join(self.datasetPath, 'train.dat')
         if self.use_memmap:
@@ -52,21 +56,35 @@ class DataGenerator:
 
     def generate_files(self):
         self.logger.info("generating images on disk")
+        if not self.load_from_disk:
+            for n, img_file in enumerate(self.selected_data):
+                img_name = os.path.split(img_file)[1]
+                
+                glob_image_path = os.path.join(self.numpy_img_path, f"{img_name}*.npy")
+                images = glob.glob(glob_image_path)
+                
+                if(len(images)):
+                    self.logger.info("file(s) exists, skipping")
+                    continue
+                
+                try:
+                    img = Image.open(img_file)
+                    self.logger.info(f'Writing {n}/{self.numFiles} ({img_file})')
+                except Exception as e:
+                    self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
+                    continue
 
-        for n, img_file in enumerate(self.selected_data):
-            img_name = os.path.split(img_file)[1]
-            complete_img_path = os.path.join(self.numpy_img_path, img_name + ".npy")
-            if(os.path.exists(complete_img_path)):
-                self.logger.info("file exists, skipping")
-                continue
-            try:
-                img = Image.open(img_file)
-                self.logger.info(f'Writing {n}/{self.numFiles} ({img_file})')
-            except Exception as e:
-                self.logger.error("{0} -- error opening image, skipping {1}".format(e, img_file))
-                continue
-            np.save(complete_img_path, DataGenerator.prepare_image(img, self.img_dims, self.convert, background_color=self.background_color))
+                if self.crop:
+                    imgs = DataGenerator.crop_images(img, self.img_dims)
+                    for i, sub_img in enumerate(imgs):
+                        complete_img_path = os.path.join(self.numpy_img_path, img_name + f"_{i}.npy")
+                        np.save(complete_img_path, sub_img)
+                else:
+                    complete_img_path = os.path.join(self.numpy_img_path, img_name + ".npy")
+                    np.save(complete_img_path, DataGenerator.prepare_image(img, self.img_dims, self.convert, background_color=self.background_color))
 
+        self.selected_data = DataGenerator.create_filelist(self.numpy_img_path, [".npy"])
+        self.numFiles = len(self.selected_data)
 
     def getBatch(self, batchSize):
         indices = np.random.randint(0, self.numFiles-1, size=batchSize)
@@ -82,9 +100,7 @@ class DataGenerator:
             return batch
 
         for i in indices:
-            img_name = os.path.split(self.selected_data[i])[1]
-            complete_img_path = os.path.join(self.numpy_img_path, img_name + ".npy")
-            img = np.load(complete_img_path)
+            img = np.load(self.selected_data[i])
             imgArrays.append(img)
         batch = np.stack(imgArrays, axis=0)
         batch = convert_to_tensor(batch, dtype=float32)
@@ -101,7 +117,7 @@ class DataGenerator:
         for filetype in filetypes:
             filtered = filter(lambda x: x.endswith(filetype), all_files)
             filtered_files.update(filtered)
-        return filtered_files
+        return list(filtered_files)
 
     @staticmethod
     def filter_broken_images(image_filenames):
@@ -144,6 +160,30 @@ class DataGenerator:
         img_data = np.subtract(img_data, 1)
 
         return img_data
+
+    @staticmethod
+    def crop_images(img, crop_size, convert=None):
+        if convert:
+            img = img.convert(convert)
+
+        img = np.asarray(img)
+        x_steps = img.shape[0]//crop_size[0]
+        y_steps = img.shape[1]//crop_size[1]
+
+        imgs = []
+        for x_step in range(x_steps):
+            x_index = crop_size[0] * x_step
+            for y_step in range(y_steps):
+                y_index = crop_size[1] * y_step
+                
+                img_data = img[x_index:x_index+crop_size[0], y_index:y_index+crop_size[1], :crop_size[2]]
+                
+                # scale [-1, 1]
+                img_data = np.divide(img_data, (255 * 0.5))
+                img_data = np.subtract(img_data, 1)
+                imgs.append(img_data)
+
+        return imgs
 
     @staticmethod
     def expand2square(pil_img, background_color=0):

@@ -10,7 +10,7 @@ BACKGROUND_COLOUR = (255, 255, 255)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], use_memmap=False, background_color=BACKGROUND_COLOUR)
+data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], use_memmap=False, background_color=BACKGROUND_COLOUR, crop=True, load_from_disk=True)
 cvae = CVAE(data_generator=data_generator,
           input_shape=IMG_DIMS,
           batch_size=128,
