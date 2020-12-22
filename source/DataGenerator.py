@@ -146,6 +146,8 @@ class DataGenerator:
     def prepare_image(img, img_dims, convert=None, background_color=0):       
         if convert:
             img = img.convert(convert)
+        elif img.mode is "L":
+            img = img.convert("RGB")
         
         img = DataGenerator.expand2square(img, background_color)
         img = img.resize(img_dims[:2], Image.LANCZOS)
@@ -165,6 +167,8 @@ class DataGenerator:
     def crop_images(img, crop_size, convert=None):
         if convert:
             img = img.convert(convert)
+        elif img.mode is "L":
+            img = img.convert("RGB")
 
         img = np.asarray(img)
         x_steps = img.shape[0]//crop_size[0]
@@ -191,6 +195,7 @@ class DataGenerator:
         if width == height:
             return pil_img
         
+
         if width > height:
             result = Image.new(pil_img.mode, (width, width), background_color)
             result.paste(pil_img, (0, (width - height) // 2))
