@@ -1,11 +1,14 @@
 import logging
+from tensorflow import keras
 from DataGenerator import DataGenerator
 # from Gan import Gan
-from CVAE import CVAE
+from CVAE import CVAE, Sampling
 
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
 BACKGROUND_COLOUR = (255, 255, 255)
+PRETRAINED_ENCODER_PATH = "/data/models/encoder_at_epoch30.h5"
+PRETRAINED_DECODER_PATH = "/data/models/decoder_at_epoch30.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -17,7 +20,15 @@ cvae = CVAE(data_generator=data_generator,
           latent_dim=16,
           seed=4)
 
+# swap out models
+if(PRETRAINED_ENCODER_PATH):
+    cvae.encoder = keras.models.load_model(PRETRAINED_ENCODER_PATH, {"Sampling":Sampling})
+if(PRETRAINED_DECODER_PATH):
+    cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
+
 cvae.train(epochs=10000,
           checkpoint_frequency = 1, 
           num_checkpoint_image=5)
+
+
 
