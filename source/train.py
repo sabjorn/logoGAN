@@ -7,8 +7,8 @@ from CVAE import CVAE, Sampling
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
 BACKGROUND_COLOUR = (255, 255, 255)
-PRETRAINED_ENCODER_PATH = "/data/models/encoder_at_epoch30.h5"
-PRETRAINED_DECODER_PATH = "/data/models/decoder_at_epoch30.h5"
+PRETRAINED_ENCODER_PATH = "/data/models/encoder_at_epoch60.h5"
+PRETRAINED_DECODER_PATH = "/data/models/decoder_at_epoch60.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -26,8 +26,8 @@ if(PRETRAINED_ENCODER_PATH):
 if(PRETRAINED_DECODER_PATH):
     cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
 
-cvae.train(epochs=10000,
-          checkpoint_frequency = 1, 
+cvae.train(epochs=200,
+          checkpoint_frequency = 10, 
           num_checkpoint_image=5)
 
 
