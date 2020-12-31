@@ -30,7 +30,7 @@ def createVideo(contrast, network, output_file="../generated_video/video.mp4", f
             '-i', '-', # The imput comes from a pipe
             '-an', # Tells FFMPEG not to expect any audio
             f"{output_file}" ]
-    pipe = sp.Popen(command, stdin=sp.PIPE, stderr=sp.PIPE)
+    pipe = sp.Popen(command, stdin=sp.PIPE)
 
     if(seed):
         np.random.seed(seed)
