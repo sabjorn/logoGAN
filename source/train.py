@@ -21,10 +21,15 @@ cvae = CVAE(data_generator=data_generator,
           seed=4)
 
 # swap out models
-if(PRETRAINED_ENCODER_PATH):
+try:
     cvae.encoder = keras.models.load_model(PRETRAINED_ENCODER_PATH, {"Sampling":Sampling})
-if(PRETRAINED_DECODER_PATH):
+except:
+    pass
+
+try:
     cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
+except:
+    pass
 
 cvae.train(epochs=200,
           checkpoint_frequency = 10, 
