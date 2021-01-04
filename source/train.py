@@ -4,35 +4,34 @@ from DataGenerator import DataGenerator
 # from Gan import Gan
 from CVAE import CVAE, Sampling
 
-IMG_DIMS = (2048, 2048, 3)
+IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
-BACKGROUND_COLOUR = (255, 255, 255)
+BACKGROUND_COLOUR = (0, 0, 0)
 #PRETRAINED_ENCODER_PATH = "/data/models/encoder_at_epoch60.h5"
 #PRETRAINED_DECODER_PATH = "/data/models/decoder_at_epoch60.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], use_memmap=False, background_color=BACKGROUND_COLOUR, crop=False, load_from_disk=True)
+data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], use_memmap=False, background_color=BACKGROUND_COLOUR, crop=False, load_from_disk=False)
 cvae = CVAE(data_generator=data_generator,
           input_shape=IMG_DIMS,
           batch_size=2,
           latent_dim=16,
           seed=4)
 
-# swap out models
 try:
-    cvae.encoder = keras.models.load_model(PRETRAINED_ENCODER_PATH, {"Sampling":Sampling})
+  cvae.encoder = keras.models.load_model(PRETRAINED_ENCODER_PATH, {"Sampling":Sampling})
 except:
-    pass
+  pass
 
 try:
-    cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
+  cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
 except:
-    pass
+  pass
 
 cvae.train(epochs=200,
-          checkpoint_frequency = 10, 
+          checkpoint_frequency = 1,
           num_checkpoint_image=5)
 
 
