@@ -6,9 +6,9 @@ from CVAE import CVAE, Sampling
 
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
-BACKGROUND_COLOUR = (127, 127, 127)
-#PRETRAINED_ENCODER_PATH = "/data/models/encoder_at_epoch60.h5"
-#PRETRAINED_DECODER_PATH = "/data/models/decoder_at_epoch60.h5"
+BACKGROUND_COLOUR = (0, 0, 0)
+PRETRAINED_ENCODER_PATH = "15b5341/saved_models/encoder_at_epoch72.h5"
+PRETRAINED_DECODER_PATH = "15b5341/saved_models/decoder_at_epoch72.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
