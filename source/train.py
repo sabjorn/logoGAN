@@ -7,8 +7,8 @@ from CVAE import CVAE, Sampling
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
 BACKGROUND_COLOUR = (255, 255, 255)
-PRETRAINED_ENCODER_PATH = "3003da4/saved_models/encoder_at_epoch60.h5"
-PRETRAINED_DECODER_PATH = "3003da4/saved_models/decoder_at_epoch60.h5"
+PRETRAINED_ENCODER_PATH = "3003da4/saved_models/encoder_at_epoch150.h5"
+PRETRAINED_DECODER_PATH = "3003da4/saved_models/decoder_at_epoch150.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ try:
 except:
   pass
 
-cvae.train(epochs=150,
-          checkpoint_frequency = 1,
+cvae.train(epochs=1000,
+          checkpoint_frequency = 100,
           num_checkpoint_image=5)
 
 
