@@ -6,14 +6,14 @@ from CVAE import CVAE, Sampling
 
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
-BACKGROUND_COLOUR = (0, 0, 0)
-PRETRAINED_ENCODER_PATH = "15b5341/saved_models/encoder_at_epoch36.h5"
-PRETRAINED_DECODER_PATH = "15b5341/saved_models/decoder_at_epoch36.h5"
+BACKGROUND_COLOUR = (255, 255, 255)
+PRETRAINED_ENCODER_PATH = "3003da4/saved_models/encoder_at_epoch60.h5"
+PRETRAINED_DECODER_PATH = "3003da4/saved_models/decoder_at_epoch60.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg'], use_memmap=False, background_color=BACKGROUND_COLOUR, crop=False, load_from_disk=False)
+data_generator = DataGenerator(IMG_DIMS, DATA_PATH, filetypes=['.png', '.jpg', '.tif'], use_memmap=False, background_color=BACKGROUND_COLOUR, crop=False, load_from_disk=False)
 cvae = CVAE(data_generator=data_generator,
           input_shape=IMG_DIMS,
           batch_size=2,
