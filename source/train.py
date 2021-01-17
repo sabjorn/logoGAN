@@ -7,8 +7,8 @@ from CVAE import CVAE, Sampling
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
 BACKGROUND_COLOUR = (0, 0, 0)
-PRETRAINED_ENCODER_PATH = "./8461b9b/saved_models/encoder_at_epoch150.h5"
-PRETRAINED_DECODER_PATH = "./8461b9b/saved_models/decoder_at_epoch150.h5"
+PRETRAINED_ENCODER_PATH = "./15b5341/saved_models/encoder_at_epoch35.h5"
+PRETRAINED_DECODER_PATH = "./15b5341/saved_models/decoder_at_epoch35.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -24,14 +24,14 @@ try:
   cvae.encoder = keras.models.load_model(PRETRAINED_ENCODER_PATH, {"Sampling":Sampling})
 except NameError as e:
   pass
-except:
+except Exception as e:
   print(e)
 
 try:
   cvae.decoder = keras.models.load_model(PRETRAINED_DECODER_PATH)
 except NameError as e:
   pass
-except:
+except Exception as e:
   print(e)
 
 cvae.train(epochs=150,
