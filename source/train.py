@@ -34,7 +34,7 @@ except NameError as e:
 except Exception as e:
   print(e)
 
-cvae.train(epochs=150,
+cvae.train(epochs=200,
           checkpoint_frequency = 10,
           num_checkpoint_image=5)
 
