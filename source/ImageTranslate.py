@@ -33,6 +33,11 @@ if __name__ == '__main__':
         "--joined",
         help="output original image next to processed image",
         action="store_true")
+    parser.add_argument("-b",
+        "--background",
+        help="set backround colour for image scaling, must take the form '255 255 255'",
+        nargs="+",
+        type=int)
     parser.add_argument(
         "-v",
         "--verbose",
@@ -46,7 +51,9 @@ if __name__ == '__main__':
     input_dims = encoder.input_shape[1:]
 
     input_img = Image.open(args.input)
-    input_img = DataGenerator.prepare_image(input_img, input_dims, convert=None, background_color=(255, 255, 255))
+
+    background = tuple(args.background or [255, 255, 255])
+    input_img = DataGenerator.prepare_image(input_img, input_dims, convert=None, background_color=background)
 
     z_mean, z_log_var, z = encoder(np.expand_dims(input_img, 0))
     x_decoded = decoder.predict(z)
