@@ -6,6 +6,8 @@ import subprocess as sp
 
 import numpy as np
 
+from utilities.utilities import interpolate_points, load_model
+
 sys.path.append("../ThirdParty/super-resolution")
 from model.srgan import generator
 from model import resolve_single
@@ -52,13 +54,6 @@ def createVideo(contrast, network, output_file="../generated_video/video.mp4", f
     
     pipe.terminate()
 
-def interpolate_points(p1, p2, n_steps=100):
-    interpolation_plane = np.zeros([n_steps, p1.shape[0]])
-    zipped = np.dstack((p1, p2))[0]
-    for i, p in enumerate(zipped):
-        interpolation_plane[:, i] = np.linspace(p[0], p[1], num=n_steps)
-    return interpolation_plane
-
 
 def upscale_image(image, model, resize=(256, 256)):
     upscaled = resolve_single(model, image)
@@ -66,26 +61,6 @@ def upscale_image(image, model, resize=(256, 256)):
     upscaled_resized = np.asarray(upscaled_resized)
     upscaled_second = resolve_single(model, upscaled_resized)
     return np.asarray(upscaled_second)
-
-def load_model(model_file):
-    model = keras.models.load_model(model_file)
-    
-    input_shape = model.output_shape[1:]
-    latent_dim = model.input_shape[1]
-    
-    if("decoder" in model_file):
-        print("using CVAE")
-        container = CVAE(
-              input_shape=input_shape,
-              latent_dim=latent_dim)
-        container.decoder = model
-    
-    if("generator" in model_file):
-        print("using GAN")
-        container = Gan(data_generator=None, input_shape=input_shape, latent_dim=latent_dim)
-        container.generator = model
-
-    return container
 
 
 if __name__ == '__main__':
