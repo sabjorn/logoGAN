@@ -33,6 +33,8 @@ def createVideo(network, coordinates, total_time_s, keyframe_hold_time_s, framer
             '-framerate', f"{framerate}", # frames per second
             '-s', f"{input_shape[0]}x{input_shape[1]}", # size of one frame
             '-i', '-', # The imput comes from a pipe
+            '-c:v', 'libx264',
+            '-crf', '16',
             '-framerate', f"{framerate}", # frames per second
             '-an', # Tells FFMPEG not to expect any audio
             f"{output_file}" ]
