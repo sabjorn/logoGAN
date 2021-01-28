@@ -3,34 +3,53 @@ import argparse
 import os
 import sys
 
-from utilities.utilities import load_model
-
 import numpy as np
 import PIL.Image as Image
+
+from perlin_numpy import (generate_perlin_noise_2d, generate_perlin_noise_3d)
+
+from tensorflow import keras
+
+from CVAE import Sampling
+
+def perlin_image_input(encoder, res, gain, repeat=(True, True, True)):
+    res = res[:3]
+    input_shape = encoder.input_shape[1:]
+    input_img = generate_perlin_noise_3d(input_shape, res, repeat)
+    input_img *= gain
+    _, _, z = encoder(np.expand_dims(input_img, 0))
+    return z
+
+def perlin_latent_dim(latent_dim, res, gain):
+    res = res[0]
+    z = generate_perlin_noise_2d((1, latent_dim), (1, res))
+    z *= gain
+    return z
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generates a video from a Keras model.")
     parser.add_argument(
-        "decoder",
-        help="the path to CVAE decoder model",
+        "-e",
+        "--encoder",
+        help="the path to CVAE encoder model",
         type=str)
+    parser.add_argument(
+        "-d",
+        "--decoder",
+        help="the path to CVAE decoder model",
+        type=str),
     parser.add_argument(
         "-o",
         "--output",
         help="output directory",
-        type=str)
+        type=str,
+        default="./")
     parser.add_argument(
         "-s",
         "--seed",
         help="random seed value",
         default=None,
         type=int)
-    parser.add_argument(
-        "-r",
-        "--random",
-        help="type of random ('normal' vs 'uniform')",
-        default="normal",
-        type=str)
     parser.add_argument(
         "-a",
         "--scale",
@@ -44,39 +63,43 @@ if __name__ == '__main__':
         default=1,
         type=int),
     parser.add_argument(
-        "-v",
-        "--verbose",
-        help="print information about process",
-        action="store_true")
+        "-r",
+        "--res",
+        help="periods of nosie along each axis, note: 'image' take 3 values and 'latent' takes 1",
+        nargs="+",
+        type=int)
     args = parser.parse_args()
 
-    model = load_model(args.decoder)
-    latent_dim = model.latent_dim
-    input_shape = model.input_shape
+    decoder = keras.models.load_model(args.decoder)
+    latent_dim = decoder.input_shape[1]
+    input_shape = decoder.output_shape[1:]
+    ptype = "latent"
 
-    if(args.seed):
-        np.random.seed(args.seed)
+    if args.encoder:
+        encoder = keras.models.load_model(args.encoder, {"Sampling":Sampling})
+        input_shape = encoder.input_shape[1:]
+        ptype = "image"
 
-    if(args.random is "uniform"):
-        z_samples = np.random.uniform(-args.scale, args.scale, (args.iter, latent_dim))
-    else:
-        z_samples = np.random.normal(-1, 1, (args.iter, latent_dim)) * args.scale
-    
+    outdir = args.output
     try:
-        os.mkdir(args.output)
-    except FileExistsError:
-        pass
+        os.makedirs(outdir)
     except:
-        print("Unexpected error:", sys.exc_info()[0])
-        raise
+        pass
 
-    for i, sample in enumerate(z_samples):
-        file_path = os.path.join(args.output, f'{args.random}_seed{args.seed}_scale{args.scale}_step{i}.png')
+    if args.seed: np.random.seed(args.seed)
 
-        x_decoded = model.decoder.predict(np.expand_dims(sample, axis=0))
+    gain = args.scale
+    num_imgs = args.iter
+    res = tuple(args.res)
+
+    for i in range(num_imgs):
+        if ptype == "image":
+            z = perlin_image_input(encoder, res, gain)
+        if ptype == "latent":
+            z = perlin_latent_dim(latent_dim, res, gain)
+
+        x_decoded = decoder.predict(z)
         pred = x_decoded.reshape(input_shape)
         image = np.asarray(pred * 127.5 + 127.5, dtype='uint8')
-        Image.fromarray(image).save(file_path)
 
-    if(args.verbose):
-        print("lol")
+        Image.fromarray(image).save(os.path.join(outdir, f"perlin_type-{ptype}_seed{args.seed}_gain{gain}_res{res}_{i}.png"))
