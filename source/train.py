@@ -7,8 +7,8 @@ from CVAE import CVAE, Sampling
 IMG_DIMS = (1024, 1024, 3)
 DATA_PATH = "/data"
 BACKGROUND_COLOUR = (255, 255, 255)
-PRETRAINED_ENCODER_PATH = "./e61acb0/saved_models/encoder_at_epoch180.h5"
-PRETRAINED_DECODER_PATH = "./e61acb0/saved_models/decoder_at_epoch180.h5"
+PRETRAINED_ENCODER_PATH = "./6c71e7b/saved_models/encoder_at_epoch200.h5"
+PRETRAINED_DECODER_PATH = "./6c71e7b/saved_models/eecoder_at_epoch200.h5"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ except NameError as e:
 except Exception as e:
   print(e)
 
-cvae.train(epochs=200,
+cvae.train(epochs=1000,
           checkpoint_frequency = 10,
           num_checkpoint_image=5)
 
