@@ -128,7 +128,7 @@ class CVAE:
             kl_loss = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
             kl_loss = tf.reduce_mean(kl_loss)
             kl_loss *= -0.5
-            total_loss = reconstruction_loss + kl_loss
+            total_loss = keras.backend.mean(reconstruction_loss + kl_loss)
         
         grads = encoder_tape.gradient(total_loss, self.encoder.trainable_weights)
         self.encoder_optimizer.apply_gradients(zip(grads, self.encoder.trainable_weights))
